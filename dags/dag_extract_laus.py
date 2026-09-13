@@ -10,6 +10,6 @@ with DAG(
 ) as dag:
 
     extract_laus = BashOperator(
-        task_id="extract_laus"
+        task_id="extract_laus",
         bash_command="cd /opt/de-market-analysis && python extract/extract_laus.py"
     )
