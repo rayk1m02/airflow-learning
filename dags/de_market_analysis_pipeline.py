@@ -13,3 +13,10 @@ with DAG(
         task_id="extract_laus",
         bash_command="cd /opt/de-market-analysis && python extract/extract_laus.py"
     )
+
+    extract_oews = BashOperator(
+        task_id="extract_oews",
+        bash_command="cd /opt/de-market-analysis && python extract/extract_oews.py"
+    )
+
+    extract_laus >> extract_oews
