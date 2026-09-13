@@ -29,4 +29,4 @@ with DAG(
         bash_command="cd /opt/de-market-analysis && dbt test"
     )
 
-    extract_laus >> extract_oews >> run_dbt >> test_dbt
+    extract_laus >> extract_oews >> run_dbt >> test_dbt 
