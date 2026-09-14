@@ -19,14 +19,14 @@ with DAG(
         bash_command="cd /opt/de-market-analysis && python extract/extract_oews.py"
     )
 
-    run_dbt = BashOperator(
+    dbt_run = BashOperator(
         task_id="dbt_run",
         bash_command="cd /opt/de-market-analysis && dbt run"
     )
 
-    test_dbt = BashOperator(
+    dbt_test = BashOperator(
         task_id="dbt_test",
         bash_command="cd /opt/de-market-analysis && dbt test"
     )
 
-    extract_laus >> extract_oews >> run_dbt >> test_dbt 
+    extract_laus >> extract_oews >> dbt_run >> dbt_test
