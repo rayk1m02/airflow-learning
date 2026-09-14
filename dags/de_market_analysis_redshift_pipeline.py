@@ -16,11 +16,16 @@ with DAG(
         bash_command="cd /opt/de-market-analysis && python extract/extract_laus_s3.py"
     )
 
-    truncate_and_copy_redshift = SQLExecuteQueryOperator(
+    truncate_laus = SQLExecuteQueryOperator(
+        task_id="truncate_laus",
+        conn_id="redshift_default",
+        sql="TRUNCATE TABLE raw_laus_data;"
+    )
+
+    copy_to_redshift = SQLExecuteQueryOperator(
         task_id="copy_to_redshift",
         conn_id="redshift_default",
         sql="""
-            TRUNCATE TABLE raw_laus_data;
             COPY raw_laus_data
             FROM 's3://s3-learn-bucket-381492047455-us-west-2-an/raw/laus/laus_data.csv'
             IAM_ROLE 'arn:aws:iam::381492047455:role/aws-learn-redshift'
@@ -34,4 +39,4 @@ with DAG(
         bash_command="cd /opt/de-market-analysis && dbt run --target redshift --select stg_laus_data"
     )
 
-    extract_laus_s3 >> truncate_and_copy_redshift >> dbt_run_redshift
+    extract_laus_s3 >> truncate_laus >> copy_to_redshift >> dbt_run_redshift
