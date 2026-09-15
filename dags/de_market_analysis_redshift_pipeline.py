@@ -3,9 +3,16 @@ from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
 from datetime import datetime, timedelta
 
+def alert_on_failure(context):
+    task_id = context["task_instance"].task_id
+    dag_id = context["dag"].dag_id
+    execution_date = context["execution_date"]
+    print(f"ALERT: Task '{task_id}' in DAG '{dag_id}' failed at {execution_date}")
+
 default_args = {
     "retries": 2,
     "retry_delay": timedelta(minutes=2),
+    "on_failure_callback": alert_on_failure,
 }
 
 with DAG(
