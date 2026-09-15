@@ -1,4 +1,3 @@
-
 from airflow import DAG
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
@@ -22,8 +21,8 @@ with DAG(
         sql="TRUNCATE TABLE raw_laus_data;"
     )
 
-    copy_to_redshift = SQLExecuteQueryOperator(
-        task_id="copy_to_redshift",
+    copy_laus_redshift = SQLExecuteQueryOperator(
+        task_id="copy_laus_redshift",
         conn_id="redshift_default",
         sql="""
             COPY raw_laus_data
@@ -34,9 +33,35 @@ with DAG(
         """
     )
 
-    dbt_run_redshift = BashOperator(
-        task_id="dbt_run_redshift",
-        bash_command="cd /opt/de-market-analysis && dbt run --target redshift --select stg_laus_data"
+    extract_oews_s3 = BashOperator(
+        task_id="extract_oews_s3",
+        bash_command="cd /opt/de-market-analysis && python extract/extract_oews_s3.py"
     )
 
-    extract_laus_s3 >> truncate_laus >> copy_to_redshift >> dbt_run_redshift
+    truncate_oews = SQLExecuteQueryOperator(
+        task_id="truncate_oews",
+        conn_id="redshift_default",
+        sql="TRUNCATE TABLE raw_oews_data;"
+    )
+
+    copy_oews_redshift = SQLExecuteQueryOperator(
+        task_id="copy_oews_redshift",
+        conn_id="redshift_default",
+        sql="""
+            COPY raw_oews_data
+            FROM 's3://s3-learn-bucket-381492047455-us-west-2-an/raw/oews/oews_data.csv'
+            IAM_ROLE 'arn:aws:iam::381492047455:role/aws-learn-redshift'
+            CSV
+            IGNOREHEADER 1;
+        """
+    )
+
+    dbt_run_redshift = BashOperator(
+        task_id="dbt_run_redshift",
+        bash_command="cd /opt/de-market-analysis && dbt run --target redshift --select stg_laus_data stg_oews_data"
+    )
+
+    extract_laus_s3 >> truncate_laus >> copy_laus_redshift
+    extract_oews_s3 >> truncate_oews >> copy_oews_redshift
+
+    [copy_laus_redshift, copy_oews_redshift] >> dbt_run_redshift
