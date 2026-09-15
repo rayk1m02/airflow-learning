@@ -1,7 +1,12 @@
 from airflow import DAG
 from airflow.providers.standard.operators.bash import BashOperator
 from airflow.providers.common.sql.operators.sql import SQLExecuteQueryOperator
-from datetime import datetime
+from datetime import datetime, timedelta
+
+default_args = {
+    "retries": 2,
+    "retry_delay": timedelta(minutes=2),
+}
 
 with DAG(
     dag_id="de_market_analysis_redshift_pipeline",
@@ -13,6 +18,7 @@ with DAG(
     extract_laus_s3 = BashOperator(
         task_id="extract_laus_s3",
         bash_command="cd /opt/de-market-analysis && python extract/extract_laus_s3.py"
+        # retries=0, # overrides default_args for just this task
     )
 
     truncate_laus = SQLExecuteQueryOperator(
